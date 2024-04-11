@@ -32,7 +32,7 @@ const UserSchema: Schema = new Schema(
       required: [true, "Provide email"],
       trim: true,
       match: /.+\@.+\..+/,
-      unique: true,
+      // unique: true,
     },
     img: {
       type: String,

@@ -11,6 +11,7 @@ import { User } from "../../models/user/user_model";
 import { sendMail } from "../../../utils/male_utils";
 import { emailTemplate } from "../../../utils/templates";
 import { notification } from "../../models/user/notification_model";
+import { Server, Socket } from "socket.io";
 import { io } from "../../..";
 
 export const createUser = async (req: Request, res: Response) => {
@@ -18,10 +19,12 @@ export const createUser = async (req: Request, res: Response) => {
 
   try {
     const { Name, Mail_ID, PhoneNumber, password } = req.body;
+    if(hasData(imgFile)){
     imgFile = await FileUploadToLocalServer({
       req,
       pathToUpload: User.modelName,
     });
+  }
     var data: any = {
       name: Name,
       mobile_no: PhoneNumber,
@@ -31,12 +34,15 @@ export const createUser = async (req: Request, res: Response) => {
     };
     const user = await new User(data).save();
 
-    await notification.create({
+    //─────────────────────────────── oms ───────────────────────────────
+    await createNotification(req, {
       user_id: user._id,
       message: "New user created: " + user.name,
     });
 
-    io.emit("notification", { message: "New user created: " + user.name });
+    //─────────────────────────────── oms ───────────────────────────────
+
+ 
 
     if (hasData(Mail_ID)) {
       const encryptedMessage = btoa(tokenEncode({ uid: user._id, Mail_ID }));
@@ -56,5 +62,24 @@ export const createUser = async (req: Request, res: Response) => {
   } catch (error) {
     await DeleteLocalServerFile(imgFile);
     return errorResponse(res, error);
+  }
+};
+
+export const createNotification = async (
+  req: Request,
+  data: { user_id?: any; message?: string }
+) => {
+  try {
+    let not = new notification({
+      user_id: data.user_id,
+      message: data.message,
+    }).save();
+
+    return io.emit("new-user", {msg:(await not).message});
+
+  } catch (error) {
+    console.log("have bug on socket");
+    
+
   }
 };

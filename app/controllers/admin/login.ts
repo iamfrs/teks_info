@@ -13,6 +13,7 @@ export const userLogin = async (req: Request, res: Response) => {
 
     let user = await User.findOne({
       mobile_no: PhoneNumber,
+      active:true,
     });
 
     if (!user) {
